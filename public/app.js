@@ -159,16 +159,24 @@ video.addEventListener('pause', () => {
 video.addEventListener('play', () => { if (!leftTab) stopMusic(); });
 video.addEventListener('ended', () => stopMusic());
 
+let wasPlayingBeforeLeave = false;
+
 function onLeave() {
   if (!isPlayerOpen()) return;
   leftTab = true;
+  wasPlayingBeforeLeave = !video.paused && !video.ended;
+  if (wasPlayingBeforeLeave) video.pause(); // the lesson stops while you're away
   playMusic('distraction');
 }
 function onReturn() {
   if (!leftTab) return;
   leftTab = false;
   stopMusic();
-  if (isPlayerOpen() && video.paused && !video.ended) playMusic('pause');
+  if (isPlayerOpen() && !video.ended) {
+    if (wasPlayingBeforeLeave) video.play().catch(() => {}); // resume where you left
+    else if (video.paused) playMusic('pause');
+  }
+  wasPlayingBeforeLeave = false;
 }
 document.addEventListener('visibilitychange', () => document.hidden ? onLeave() : onReturn());
 window.addEventListener('blur', onLeave);
@@ -211,7 +219,26 @@ function closePlayer() {
   renderPlaylists();
 }
 $('#closePlayer').onclick = closePlayer;
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && isPlayerOpen()) closePlayer(); });
+
+function inFullscreen() {
+  return !!(document.fullscreenElement || document.webkitFullscreenElement);
+}
+function toggleFullscreen() {
+  if (inFullscreen()) {
+    (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  } else {
+    const req = video.requestFullscreen || video.webkitRequestFullscreen || video.webkitEnterFullscreen;
+    if (req) req.call(video);
+  }
+}
+document.addEventListener('keydown', e => {
+  if (!isPlayerOpen()) return;
+  const t = e.target;
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT')) return;
+  if (e.key === 'f' || e.key === 'F') { e.preventDefault(); toggleFullscreen(); }
+  // Esc in fullscreen only exits fullscreen; Esc outside it closes the player
+  if (e.key === 'Escape' && !inFullscreen()) closePlayer();
+});
 
 let lastSave = 0;
 let watchedSeconds = 0;
