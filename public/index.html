@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YK LearnHub — Yuvraj's Learning Space</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- FACE ID LOCK SCREEN -->
+<div id="lock" class="lock">
+  <div class="lock-stage">
+    <div class="face-ring" id="faceRing">
+      <video id="camVideo" autoplay muted playsinline></video>
+      <div class="tick hidden" id="tick">
+        <svg viewBox="0 0 52 52"><path fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" d="M14 27l8 8 16-16"/></svg>
+      </div>
+    </div>
+    <h2 id="lockTitle">YK</h2>
+    <p id="lockStatus" class="dim">Starting camera…</p>
+    <button id="enrollBtn" class="btn-primary hidden">Set up Face ID</button>
+    <button id="lockRetry" class="btn-ghost hidden">Retry</button>
+  </div>
+</div>
+
+<div class="bg-mark" aria-hidden="true">YK</div>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">YK</div>
+    <div>
+      <h1>LearnHub</h1>
+      <span class="tagline">private learning space</span>
+    </div>
+  </div>
+  <nav class="tabs">
+    <button class="tab active" data-tab="learning">Learning</button>
+    <button class="tab" data-tab="updates">My Updates</button>
+    <button class="tab" data-tab="admin">Admin</button>
+  </nav>
+  <div class="daystats">
+    <div class="stat"><span id="todayTime">0m</span><label>today</label></div>
+    <div class="stat"><span id="streak">0</span><label>day streak</label></div>
+  </div>
+</header>
+
+<!-- LEARNING TAB -->
+<main id="tab-learning" class="tabpage active">
+
+  <!-- playlists view -->
+  <section id="view-playlists">
+    <section class="course-hero">
+      <div class="hero-text">
+        <span class="hero-kicker">KEEP GOING, YUVRAJ</span>
+        <h2>Your <span class="accent">Playlists</span></h2>
+        <div class="hero-progress">
+          <div class="hero-bar"><div id="courseBar" class="hero-bar-fill"></div></div>
+          <span id="courseProgressLabel">0% complete</span>
+        </div>
+      </div>
+      <div class="hero-ring">
+        <svg viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="52" class="ring-bg"/>
+          <circle cx="60" cy="60" r="52" class="ring-fill" id="ringFill"/>
+        </svg>
+        <div class="ring-label" id="ringLabel">0%</div>
+      </div>
+    </section>
+
+    <div id="emptyPlaylists" class="empty hidden">
+      <h3>No playlists yet</h3>
+      <p>Go to <b>Admin</b> to create a playlist and add your videos.</p>
+    </div>
+
+    <section id="playlistGrid" class="grid"></section>
+  </section>
+
+  <!-- videos-inside-playlist view -->
+  <section id="view-videos" class="hidden">
+    <div class="playlist-head">
+      <button id="backToPlaylists" class="btn-ghost">&larr; All playlists</button>
+      <div>
+        <h2 id="playlistTitle"></h2>
+        <span id="playlistProgressLabel" class="dim"></span>
+      </div>
+      <div class="pl-bar"><div id="playlistBar" class="hero-bar-fill"></div></div>
+    </div>
+    <section id="videoGrid" class="grid"></section>
+  </section>
+</main>
+
+<!-- UPDATES TAB -->
+<main id="tab-updates" class="tabpage">
+  <section class="updates-wrap">
+    <h2>My Updates</h2>
+    <div class="update-input">
+      <textarea id="updateText" rows="3" placeholder="What did you learn / build / decide today?"></textarea>
+      <button id="addUpdate" class="btn-primary">Post update</button>
+    </div>
+    <div id="updatesList" class="updates-list"></div>
+  </section>
+</main>
+
+<!-- ADMIN TAB -->
+<main id="tab-admin" class="tabpage">
+  <section class="admin-wrap">
+    <h2>Admin</h2>
+
+    <div class="admin-card">
+      <h3>Create a playlist</h3>
+      <div class="row">
+        <input id="newPlaylistName" type="text" placeholder="e.g. Complete Data Science with ML">
+        <button id="createPlaylist" class="btn-primary">Create</button>
+      </div>
+    </div>
+
+    <div class="admin-card">
+      <h3>Add videos <span class="dim">(any size — GBs are fine, streamed straight to E: drive)</span></h3>
+      <div class="row">
+        <select id="uploadPlaylist"></select>
+        <label class="btn-primary file-btn">
+          Choose video files
+          <input id="fileInput" type="file" accept="video/*,.mkv,.avi,.m4v,.mov" multiple hidden>
+        </label>
+      </div>
+      <p class="dim tip">Tip: name files <b>01 Intro.mp4</b>, <b>02 Numpy.mp4</b> … so they stay in order.
+      You can also just copy files into <code>E:\LearnHub\videos\&lt;playlist&gt;\</code> directly — both work.</p>
+      <div id="uploadQueue" class="upload-queue"></div>
+    </div>
+
+    <div class="admin-card">
+      <h3>Manage videos <span class="dim">(custom thumbnail image / delete)</span></h3>
+      <div class="row">
+        <select id="managePlaylist"></select>
+        <button id="toggleManage" class="btn-ghost">Show videos</button>
+        <button id="deletePlaylistBtn" class="btn-ghost btn-danger">Delete this playlist</button>
+      </div>
+      <div id="manageList" class="manage-list"></div>
+      <input id="thumbInput" type="file" accept="image/*" hidden>
+    </div>
+
+    <div class="admin-card">
+      <h3>Face ID &amp; login sessions</h3>
+      <div class="row">
+        <button id="resetFace" class="btn-ghost btn-danger">Reset Face ID</button>
+        <span id="sessionsFolder" class="dim"></span>
+      </div>
+      <div id="sessionsList" class="sessions-list"></div>
+    </div>
+  </section>
+</main>
+
+<!-- PLAYER OVERLAY -->
+<div id="player" class="player hidden">
+  <div class="player-top">
+    <button id="closePlayer" class="btn-ghost">&larr; Back</button>
+    <h3 id="playerTitle"></h3>
+    <span id="playerBadge" class="badge"></span>
+  </div>
+  <video id="video" controls preload="auto"></video>
+  <div class="player-bottom">
+    <span id="playerHint" class="dim">Pause = music plays until you resume. Leaving this tab = "come back" music.</span>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="app.js"></script>
+<script src="vendor/face-api.min.js"></script>
+<script src="lock.js"></script>
+</body>
+</html>

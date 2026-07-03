@@ -1,0 +1,14 @@
+# course videos — way too big for git, they live on the E: drive only
+videos/
+
+# personal data: face descriptors, watch progress, session logs, updates
+data/
+
+# generated thumbnails
+thumbs/
+
+# personal music files
+music/
+
+# upload leftovers
+*.part
