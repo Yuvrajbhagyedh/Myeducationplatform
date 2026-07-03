@@ -84,6 +84,24 @@ function synthStop() {
   if (synthTimer) { clearInterval(synthTimer); synthTimer = null; }
 }
 
+/* Safari blocks programmatic audio until a real user tap "unlocks" it */
+let audioUnlocked = false;
+function unlockAudio() {
+  if (audioUnlocked) return;
+  audioUnlocked = true;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    audioCtx.resume();
+  } catch (e) {}
+  [pauseAudio, distractionAudio].forEach(el => {
+    if (!el.src) return;
+    el.muted = true;
+    el.play().then(() => { el.pause(); el.currentTime = 0; el.muted = false; })
+      .catch(() => { el.muted = false; });
+  });
+}
+document.addEventListener('pointerdown', unlockAudio, { once: true, capture: true });
+
 function playMusic(kind) {
   stopMusic(); // never both at once
   const url = musicUrls[kind];
@@ -141,8 +159,13 @@ function openVideo(v, index) {
   video.src = `/video/${encodeURIComponent(currentPlaylist.id)}/${encodeURIComponent(v.file)}`;
   const saved = progress[keyOf(currentPlaylist.id, v.file)];
   if (saved && saved.time > 3 && (saved.percent || 0) < 90) {
-    video.currentTime = saved.time;
-    toast(`Resumed from ${fmtTime(saved.time)}`);
+    // Safari ignores seeks before metadata is loaded — wait for it
+    const seek = () => {
+      video.currentTime = saved.time;
+      toast(`Resumed from ${fmtTime(saved.time)}`);
+    };
+    if (video.readyState >= 1) seek();
+    else video.addEventListener('loadedmetadata', seek, { once: true });
   }
   video.play().catch(() => {});
 }
@@ -625,6 +648,9 @@ async function loadStats() {
   [playlists, progress, musicUrls] = await Promise.all([
     api('/api/playlists'), api('/api/progress'), api('/api/music')
   ]);
+  // preload music files so Safari's unlock-on-first-tap can prime them
+  if (musicUrls.pause) pauseAudio.src = musicUrls.pause;
+  if (musicUrls.distraction) distractionAudio.src = musicUrls.distraction;
   renderPlaylists();
   refreshUploadSelect();
   renderUpdates(await api('/api/updates'));
