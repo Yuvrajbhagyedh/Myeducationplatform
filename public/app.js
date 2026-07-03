@@ -3,7 +3,7 @@ const $ = s => document.querySelector(s);
 
 let playlists = [];
 let progress = {};
-let musicUrls = { pause: null, distraction: null };
+let musicUrls = { pause: [], distraction: [] };
 let currentPlaylist = null;   // { id, title }
 let currentVideos = [];
 let currentVideo = null;      // { file, title, ... }
@@ -102,19 +102,47 @@ function unlockAudio() {
 }
 document.addEventListener('pointerdown', unlockAudio, { once: true, capture: true });
 
+/* random track every time; tracks that end chain into another random one */
+let activeKind = null;
+let lastTrack = null;
+
+function pickTrack(kind) {
+  const list = musicUrls[kind] || [];
+  if (!list.length) return null;
+  let url = list[Math.floor(Math.random() * list.length)];
+  if (list.length > 1 && url === lastTrack)
+    url = list[(list.indexOf(url) + 1) % list.length]; // don't repeat the same song back-to-back
+  lastTrack = url;
+  return url;
+}
+
+// tracks matching this start somewhere in the middle instead of the beginning
+const MID_START = /badava|rascal/i;
+
 function playMusic(kind) {
-  stopMusic(); // never both at once
-  const url = musicUrls[kind];
+  stopMusic(); // never two songs at once
+  activeKind = kind;
+  const url = pickTrack(kind);
   const el = kind === 'pause' ? pauseAudio : distractionAudio;
-  if (url) {
-    if (!el.src.endsWith(encodeURI(url))) el.src = url;
-    el.volume = 1.0;
+  if (!url) return synthStart(kind);
+  el.loop = false;
+  el.volume = 1.0;
+  el.src = url;
+  const begin = () => {
+    if (activeKind !== kind) return;
+    if (MID_START.test(decodeURIComponent(url)) && isFinite(el.duration) && el.duration > 20) {
+      el.currentTime = el.duration * (0.25 + Math.random() * 0.5); // random spot in the middle
+    }
     el.play().catch(() => synthStart(kind));
-  } else {
-    synthStart(kind);
-  }
+  };
+  if (el.readyState >= 1) begin();
+  else el.addEventListener('loadedmetadata', begin, { once: true });
+  el.onended = () => { if (activeKind === kind) playMusic(kind); };
 }
 function stopMusic() {
+  activeKind = null;
+  pauseAudio.onended = null;
+  distractionAudio.onended = null;
   pauseAudio.pause();
   distractionAudio.pause();
   synthStop();
@@ -648,9 +676,9 @@ async function loadStats() {
   [playlists, progress, musicUrls] = await Promise.all([
     api('/api/playlists'), api('/api/progress'), api('/api/music')
   ]);
-  // preload music files so Safari's unlock-on-first-tap can prime them
-  if (musicUrls.pause) pauseAudio.src = musicUrls.pause;
-  if (musicUrls.distraction) distractionAudio.src = musicUrls.distraction;
+  // preload one track per player so Safari's unlock-on-first-tap can prime them
+  if (musicUrls.pause.length) pauseAudio.src = musicUrls.pause[0];
+  if (musicUrls.distraction.length) distractionAudio.src = musicUrls.distraction[0];
   renderPlaylists();
   refreshUploadSelect();
   renderUpdates(await api('/api/updates'));

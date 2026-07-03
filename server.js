@@ -85,11 +85,12 @@ function listVideos(playlist) {
     });
 }
 
-function firstAudio(dir) {
+function audioList(sub) {
   try {
-    const f = fs.readdirSync(dir).filter(x => AUDIO_EXT.has(path.extname(x).toLowerCase())).sort()[0];
-    return f || null;
-  } catch { return null; }
+    return fs.readdirSync(path.join(MUSIC_DIR, sub))
+      .filter(x => AUDIO_EXT.has(path.extname(x).toLowerCase())).sort()
+      .map(f => '/music/' + sub + '/' + encodeURIComponent(f));
+  } catch { return []; }
 }
 
 function streamFile(req, res, filePath, extraHeaders = {}) {
@@ -332,11 +333,12 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (p === '/api/music') {
-      const pause = firstAudio(path.join(MUSIC_DIR, 'pause'));
-      const distraction = firstAudio(path.join(MUSIC_DIR, 'distraction'));
+      const pause = audioList('pause');
+      const distraction = audioList('distraction');
+      // folders fall back to each other so one shared pool works for both triggers
       return json(res, {
-        pause: pause ? '/music/pause/' + encodeURIComponent(pause) : null,
-        distraction: distraction ? '/music/distraction/' + encodeURIComponent(distraction) : null
+        pause: pause.length ? pause : distraction,
+        distraction: distraction.length ? distraction : pause
       });
     }
 
