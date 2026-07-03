@@ -12,7 +12,7 @@ const DATA_DIR = path.join(ROOT, 'data');
 const PUBLIC_DIR = path.join(ROOT, 'public');
 
 // self-bootstrap: a fresh clone creates its own folders
-[DATA_DIR, THUMB_DIR, VIDEO_ROOT, path.join(MUSIC_DIR, 'pause'), path.join(MUSIC_DIR, 'distraction')]
+[DATA_DIR, THUMB_DIR, VIDEO_ROOT, path.join(MUSIC_DIR, 'pause'), path.join(MUSIC_DIR, 'distraction'), path.join(MUSIC_DIR, 'motivation')]
   .forEach(d => fs.mkdirSync(d, { recursive: true }));
 
 const VIDEO_EXT = new Set(['.mp4', '.mkv', '.webm', '.mov', '.m4v', '.avi']);
@@ -338,7 +338,8 @@ const server = http.createServer(async (req, res) => {
       // folders fall back to each other so one shared pool works for both triggers
       return json(res, {
         pause: pause.length ? pause : distraction,
-        distraction: distraction.length ? distraction : pause
+        distraction: distraction.length ? distraction : pause,
+        motivation: audioList('motivation')
       });
     }
 
@@ -354,8 +355,9 @@ const server = http.createServer(async (req, res) => {
       if (!fs.existsSync(f)) { res.writeHead(404); return res.end('not found'); }
       return streamFile(req, res, f);
     }
-    if (p.startsWith('/music/pause/') || p.startsWith('/music/distraction/')) {
-      const sub = p.startsWith('/music/pause/') ? 'pause' : 'distraction';
+    if (p.startsWith('/music/')) {
+      const sub = p.split('/')[2];
+      if (!['pause', 'distraction', 'motivation'].includes(sub)) { res.writeHead(404); return res.end('not found'); }
       const f = path.join(MUSIC_DIR, sub, safeName(p.split('/').pop()));
       if (!fs.existsSync(f)) { res.writeHead(404); return res.end('not found'); }
       return streamFile(req, res, f);

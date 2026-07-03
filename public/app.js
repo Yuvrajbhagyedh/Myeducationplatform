@@ -3,7 +3,7 @@ const $ = s => document.querySelector(s);
 
 let playlists = [];
 let progress = {};
-let musicUrls = { pause: [], distraction: [] };
+let musicUrls = { pause: [], distraction: [], motivation: [] };
 let currentPlaylist = null;   // { id, title }
 let currentVideos = [];
 let currentVideo = null;      // { file, title, ... }
@@ -121,6 +121,7 @@ const MID_START = /badava|rascal/i;
 
 function playMusic(kind) {
   stopMusic(); // never two songs at once
+  motivPause(); // trigger music overrides the motivation player
   activeKind = kind;
   const url = pickTrack(kind);
   const el = kind === 'pause' ? pauseAudio : distractionAudio;
@@ -147,6 +148,51 @@ function stopMusic() {
   distractionAudio.pause();
   synthStop();
 }
+
+/* =========================================================
+   MOTIVATION MINI PLAYER (top right)
+   ========================================================= */
+const motivAudio = new Audio();
+motivAudio.volume = 1.0;
+let motivIndex = 0;
+
+function motivSongName(url) {
+  return decodeURIComponent(url.split('/').pop())
+    .replace(/\.[^.]+$/, '').replace(/^\d+\s*/, '');
+}
+function motivUpdateUI() {
+  const playing = !motivAudio.paused && motivAudio.src;
+  $('#motivPlayIcon').classList.toggle('hidden', !!playing);
+  $('#motivPauseIcon').classList.toggle('hidden', !playing);
+  const list = musicUrls.motivation;
+  $('#motivSong').textContent = list.length ? motivSongName(list[motivIndex]) : 'no songs';
+}
+function motivLoad(i) {
+  const list = musicUrls.motivation;
+  if (!list.length) return;
+  motivIndex = ((i % list.length) + list.length) % list.length;
+  motivAudio.src = list[motivIndex];
+}
+function motivPlay() {
+  const list = musicUrls.motivation;
+  if (!list.length) return toast('Drop songs in E:\\LearnHub\\music\\motivation\\');
+  stopMusic(); // motivation overrides trigger music
+  if (!motivAudio.src) motivLoad(motivIndex);
+  motivAudio.play().catch(() => {});
+}
+function motivPause() { if (!motivAudio.paused) motivAudio.pause(); }
+
+$('#motivPlay').onclick = () => { motivAudio.paused ? motivPlay() : motivPause(); };
+$('#motivSkip').onclick = () => { if (motivAudio.src) motivAudio.currentTime += 15; };
+$('#motivNext').onclick = () => {
+  const wasPlaying = !motivAudio.paused;
+  motivLoad(motivIndex + 1);
+  motivUpdateUI();
+  if (wasPlaying) motivPlay();
+};
+motivAudio.addEventListener('ended', () => { motivLoad(motivIndex + 1); motivPlay(); });
+motivAudio.addEventListener('play', motivUpdateUI);
+motivAudio.addEventListener('pause', motivUpdateUI);
 
 /* ---------- triggers: pause music + leave-tab music ---------- */
 const video = $('#video');
@@ -706,6 +752,8 @@ async function loadStats() {
   // preload one track per player so Safari's unlock-on-first-tap can prime them
   if (musicUrls.pause.length) pauseAudio.src = musicUrls.pause[0];
   if (musicUrls.distraction.length) distractionAudio.src = musicUrls.distraction[0];
+  musicUrls.motivation = musicUrls.motivation || [];
+  motivUpdateUI();
   renderPlaylists();
   refreshUploadSelect();
   renderUpdates(await api('/api/updates'));

@@ -66,6 +66,27 @@ code {
 .stat span { font-size: 18px; font-weight: 800; color: var(--text); }
 .stat label { display: block; font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; }
 
+/* ---------- motivation mini player ---------- */
+.motiv {
+  display: flex; align-items: center; gap: 8px;
+  border: 1px solid var(--text); border-radius: 12px;
+  padding: 8px 12px; background: #fff;
+}
+.motiv-info { display: flex; flex-direction: column; min-width: 0; max-width: 150px; }
+.motiv-label { font-size: 9px; letter-spacing: 2px; font-weight: 800; color: var(--dim); }
+.motiv-song {
+  font-size: 12px; font-weight: 700; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.motiv-btn {
+  width: 32px; height: 32px; border-radius: 9px; border: 1px solid var(--line);
+  background: var(--text); color: #fff; cursor: pointer;
+  display: grid; place-items: center; padding: 0; flex-shrink: 0;
+}
+.motiv-btn svg { width: 15px; height: 15px; fill: #fff; }
+.motiv-btn:hover { background: #2a2a2a; }
+.motiv-skip { width: auto; padding: 0 9px; font-size: 12px; font-weight: 800; }
+
 /* ---------- tab pages ---------- */
 .tabpage { display: none; padding: 30px 34px 80px; max-width: 1700px; margin: 0 auto; position: relative; z-index: 1; }
 .tabpage.active { display: block; }
